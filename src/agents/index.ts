@@ -2,6 +2,7 @@
  * Exportação centralizada dos agentes
  */
 export { BaseAgent } from './base.agent.js';
+export { GitSetupAgent } from './git-setup.agent.js';
 export { AnalysisAgent } from './analysis.agent.js';
 export { TaskExecutorAgent } from './task-executor.agent.js';
 export { BuildAgent } from './build.agent.js';

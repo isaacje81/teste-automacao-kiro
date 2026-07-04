@@ -2,8 +2,10 @@
  * Pipeline de Workflow - Orquestrador dos Agentes
  * 
  * Gerencia o fluxo completo:
- * 1. Buscar Feature → 2. Analisar → 3. Aprovar → 4. Executar Tasks →
- * 5. Build → 6. Testes → 7. Execução Local → 8. Criar PR
+ * 1. Git Setup (fetch + pull master + criar branch feature/{id}) →
+ * 2. Analisar → 3. Aprovar → 4. Executar Tasks →
+ * 5. Build → 6. Testes → 7. Execução Local → 8. Criar PR →
+ * 9. Documentação (docs-dracma)
  */
 import {
   WorkflowPipeline,
@@ -22,6 +24,7 @@ import {
   RunnerAgent,
   PullRequestAgent,
   DocumentationAgent,
+  GitSetupAgent,
 } from '../agents/index.js';
 import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
@@ -161,6 +164,15 @@ export class WorkflowPipelineManager extends EventEmitter {
     const workspaceRoot = this.appConfig.workspace.root;
 
     switch (step.agent) {
+      case 'git-setup': {
+        const agent = new GitSetupAgent(this.appConfig);
+        return agent.execute({
+          featureId: pipeline.featureId,
+          workspaceRoot,
+          baseBranch: 'master',
+        });
+      }
+
       case 'analysis': {
         const agent = new AnalysisAgent(this.azureService, this.appConfig);
         const result = await agent.execute({ featureId: pipeline.featureId });
@@ -268,7 +280,8 @@ export class WorkflowPipelineManager extends EventEmitter {
         if (!analysisData) throw new Error('Dados de análise não disponíveis');
 
         const agent = new PullRequestAgent(this.appConfig);
-        const branchName = `feature/${pipeline.featureId}-${this.slugify(analysisData.feature.title)}`;
+        // Branch já foi criada pelo GitSetupAgent: feature/{featureId}
+        const branchName = `feature/${pipeline.featureId}`;
 
         return agent.execute({
           feature: analysisData.feature,
@@ -334,9 +347,16 @@ export class WorkflowPipelineManager extends EventEmitter {
     return [
       {
         id: randomUUID(),
+        name: 'Preparação Git (fetch + pull + branch)',
+        agent: 'git-setup',
+        status: 'pending',
+      },
+      {
+        id: randomUUID(),
         name: 'Análise da Feature',
         agent: 'analysis',
         status: 'pending',
+        dependsOn: ['git-setup'],
       },
       {
         id: randomUUID(),

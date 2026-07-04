@@ -99,6 +99,7 @@ export interface RequiredChange {
 // ============================================================
 
 export type AgentType =
+  | 'git-setup'
   | 'analysis'
   | 'task-executor'
   | 'build'

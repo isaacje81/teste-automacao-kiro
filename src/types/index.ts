@@ -104,7 +104,8 @@ export type AgentType =
   | 'build'
   | 'test'
   | 'runner'
-  | 'pull-request';
+  | 'pull-request'
+  | 'documentation';
 
 export interface AgentConfig {
   type: AgentType;
@@ -189,6 +190,24 @@ export interface PullRequestResult {
   url: string;
   status: 'created' | 'active' | 'completed' | 'abandoned';
   title: string;
+}
+
+// ============================================================
+// Documentation
+// ============================================================
+
+export interface DocumentationConfig {
+  docsRepo: string;
+  docsRepoUrl: string;
+  docsBasePath: string;
+  targetBranch: string;
+}
+
+export interface DocumentationResult {
+  prUrl: string;
+  prId: number;
+  docsCreated: string[];
+  status: 'created' | 'failed';
 }
 
 // ============================================================

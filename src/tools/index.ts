@@ -14,6 +14,7 @@ import {
   BuildAgent,
   TestAgent,
   RunnerAgent,
+  DocumentationAgent,
 } from '../agents/index.js';
 
 export function registerTools(
@@ -347,6 +348,72 @@ export function registerTools(
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
       };
+    }
+  );
+
+  // ============================================================
+  // Tool 10: Gerar Documentação no docs-dracma
+  // ============================================================
+  server.tool(
+    'gerar_documentacao',
+    'Gera documentação da implementação e cria um Pull Request no repositório docs-dracma. Deve ser executado após o PR de desenvolvimento ser aprovado.',
+    {
+      featureId: z.number().describe('ID da Feature para documentar'),
+      developmentPrId: z.number().describe('ID do PR de desenvolvimento aprovado'),
+      developmentPrUrl: z.string().describe('URL do PR de desenvolvimento aprovado'),
+    },
+    async ({ featureId, developmentPrId, developmentPrUrl }) => {
+      try {
+        // Buscar dados da feature para documentação
+        const feature = await azureService.getFeature(featureId);
+        const tasks = await azureService.getFeatureTasks(featureId);
+        const testCases = await azureService.getFeatureTestCases(featureId);
+        const testTasks = await azureService.getFeatureTestTasks(featureId);
+
+        // Executar análise para contexto
+        const analysisAgent = new AnalysisAgent(azureService, appConfig);
+        const analysisResult = await analysisAgent.execute({ featureId });
+
+        if (!analysisResult.success) {
+          return {
+            content: [{ type: 'text' as const, text: `Falha na análise para documentação: ${analysisResult.message}` }],
+            isError: true,
+          };
+        }
+
+        // Executar agente de documentação
+        const docAgent = new DocumentationAgent(appConfig);
+        const result = await docAgent.execute({
+          feature,
+          tasks,
+          analysisResult: analysisResult.data,
+          developmentPR: {
+            id: developmentPrId,
+            url: developmentPrUrl,
+            status: 'completed',
+            title: `[Feature #${featureId}] ${feature.title}`,
+          },
+        });
+
+        if (!result.success) {
+          return {
+            content: [{ type: 'text' as const, text: `Falha ao gerar documentação: ${result.message}\n\nLogs:\n${result.logs.join('\n')}` }],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `✅ Documentação gerada e PR criado no docs-dracma!\n\n${JSON.stringify(result.data, null, 2)}\n\nLogs:\n${result.logs.slice(-10).join('\n')}`,
+          }],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: `Erro ao gerar documentação: ${error}` }],
+          isError: true,
+        };
+      }
     }
   );
 }

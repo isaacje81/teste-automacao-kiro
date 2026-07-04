@@ -21,6 +21,7 @@ import {
   TestAgent,
   RunnerAgent,
   PullRequestAgent,
+  DocumentationAgent,
 } from '../agents/index.js';
 import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
@@ -278,6 +279,26 @@ export class WorkflowPipelineManager extends EventEmitter {
         });
       }
 
+      case 'documentation': {
+        if (!analysisData) throw new Error('Dados de análise não disponíveis');
+
+        // Buscar resultado do PR de desenvolvimento do step anterior
+        const prStep = pipeline.steps.find((s) => s.agent === 'pull-request');
+        const devPR = prStep?.result?.data as import('../types/index.js').PullRequestResult | undefined;
+
+        if (!devPR) {
+          throw new Error('Resultado do PR de desenvolvimento não disponível');
+        }
+
+        const docAgent = new DocumentationAgent(this.appConfig);
+        return docAgent.execute({
+          feature: analysisData.feature,
+          tasks: analysisData.tasks,
+          analysisResult: analysisData,
+          developmentPR: devPR,
+        });
+      }
+
       default:
         throw new Error(`Agente desconhecido: ${step.agent}`);
     }
@@ -351,6 +372,13 @@ export class WorkflowPipelineManager extends EventEmitter {
         agent: 'pull-request',
         status: 'pending',
         dependsOn: ['runner'],
+      },
+      {
+        id: randomUUID(),
+        name: 'Documentação no docs-dracma',
+        agent: 'documentation',
+        status: 'pending',
+        dependsOn: ['pull-request'],
       },
     ];
   }

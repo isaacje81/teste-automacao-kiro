@@ -8,3 +8,4 @@ export { BuildAgent } from './build.agent.js';
 export { TestAgent } from './test.agent.js';
 export { RunnerAgent } from './runner.agent.js';
 export { PullRequestAgent } from './pull-request.agent.js';
+export { DocumentationAgent } from './documentation.agent.js';

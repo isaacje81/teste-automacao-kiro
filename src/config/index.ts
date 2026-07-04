@@ -24,6 +24,12 @@ export interface AppConfig {
     dotnetVersion: string;
     configuration: string;
   };
+  documentation: {
+    docsRepo: string;
+    docsRepoUrl: string;
+    docsBasePath: string;
+    docsTargetBranch: string;
+  };
 }
 
 function getEnvOrThrow(key: string): string {
@@ -60,6 +66,12 @@ export function loadConfig(): AppConfig {
     build: {
       dotnetVersion: getEnvOrDefault('DOTNET_SDK_VERSION', '8.0'),
       configuration: getEnvOrDefault('BUILD_CONFIGURATION', 'Debug'),
+    },
+    documentation: {
+      docsRepo: getEnvOrDefault('DOCS_REPO_NAME', 'docs-dracma'),
+      docsRepoUrl: getEnvOrDefault('DOCS_REPO_URL', ''),
+      docsBasePath: getEnvOrDefault('DOCS_BASE_PATH', 'docs/features'),
+      docsTargetBranch: getEnvOrDefault('DOCS_TARGET_BRANCH', 'main'),
     },
   };
 }
